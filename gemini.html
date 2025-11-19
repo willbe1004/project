@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 할 일 비서 (Google Tasks)</title>
+    <title>서진테크 AI 일정관리</title>
     <style>
         /* (CSS 스타일은 이전과 동일합니다.) */
         body { 
@@ -72,9 +72,9 @@
     </style>
 </head>
 <body>
-    <h1>📝 AI 할 일 비서 (Google Tasks)</h1>
+    <h1>📝 서진테크 AI 일정관리</h1>
     
-    <button id="start-voice-btn">🎤 음성으로 할 일 말하기</button>
+    <button id="start-voice-btn">🎤 말하기</button>
     <p>인식된 내용: <span id="voice-result"></span></p>
 
     <hr>
@@ -83,14 +83,14 @@
     <input type="text" id="text-input" placeholder="예: 내일 오후 3시에 보고서 제출하기">
     <button id="submit-text-btn">할 일 추가</button>
 
-    <p id="status-message">Google Tasks 연동을 위해 인증이 필요할 수 있습니다.</p>
+    <p id="status-message">연동을 위해 인증이 필요할 수 있습니다.</p>
     
     <script src="https://apis.google.com/js/api.js"></script> 
 
     <script>
         // 🚨 중요: 여기에 Google Cloud Console에서 발급받은 클라이언트 ID를 입력하세요.
         // 기존 캘린더 프로젝트의 ID를 그대로 사용합니다.
-        const CLIENT_ID = '1049915608396-4saprmlim0i9t9jv2dhkje4eq6uqqlnr.apps.googleusercontent.com'; 
+        const CLIENT_ID = 'cce03f167bf28bafd3795833209784265eadca0ed8138cae7d9024470ad36c66@group.calendar.google.com'; 
         
         // **수정 1: Tasks API 문서로 변경**
         const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/tasks/v1/rest"];
@@ -142,9 +142,9 @@
         function updateSigninStatus(isSignedIn) {
             isAuthorized = isSignedIn;
             if (isSignedIn) {
-                statusMessage.textContent = '✅ Google Tasks에 연결되었습니다. 음성 또는 텍스트로 할 일을 말해주세요.';
+                statusMessage.textContent = '✅ Google 에 연결되었습니다. 음성 또는 텍스트로 할 일을 말해주세요.';
             } else {
-                statusMessage.textContent = '⚠️ Google Tasks 연동을 위해 "음성으로 할 일 말하기" 버튼을 눌러 인증해주세요.';
+                statusMessage.textContent = '⚠️ Google 연동을 위해 "말하기" 버튼을 눌러 인증해주세요.';
             }
         }
 
@@ -255,3 +255,4 @@
                     voiceResult.textContent = '';
                     textInput.value = '';
                 } else if (taskResponse
+
