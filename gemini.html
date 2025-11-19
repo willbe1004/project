@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>서진테크 AI 일정관리</title>
+    <title>서진테크 AI 일정 관리</title>
     <style>
-        /* (CSS 스타일은 이전과 동일합니다.) */
         body { 
             font-family: 'Malgun Gothic', '맑은 고딕', sans-serif; 
             max-width: 600px; 
@@ -72,7 +71,7 @@
     </style>
 </head>
 <body>
-    <h1>📝 서진테크 AI 일정관리</h1>
+    <h1>📝 서진테크 AI 일정 관리</h1>
     
     <button id="start-voice-btn">🎤 말하기</button>
     <p>인식된 내용: <span id="voice-result"></span></p>
@@ -88,14 +87,15 @@
     <script src="https://apis.google.com/js/api.js"></script> 
 
     <script>
-        // 🚨 중요: 여기에 Google Cloud Console에서 발급받은 클라이언트 ID를 입력하세요.
-        // 기존 캘린더 프로젝트의 ID를 그대로 사용합니다.
+        /* 🚨 [매우 중요] 
+           아래 CLIENT_ID는 예시입니다. 
+           반드시 구글 클라우드 콘솔 > 사용자 인증 정보 > OAuth 2.0 클라이언트 ID에서 
+           '10499...' 로 시작하고 '.apps.googleusercontent.com'으로 끝나는 값을 복사해 넣으세요.
+           (이메일 주소나 캘린더 주소를 넣으면 안 됩니다!)
+        */
         const CLIENT_ID = 'cce03f167bf28bafd3795833209784265eadca0ed8138cae7d9024470ad36c66@group.calendar.google.com'; 
         
-        // **수정 1: Tasks API 문서로 변경**
         const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/tasks/v1/rest"];
-        
-        // **수정 2: Tasks 권한 범위로 변경**
         const SCOPES = 'https://www.googleapis.com/auth/tasks'; 
 
         const voiceBtn = document.getElementById('start-voice-btn');
@@ -104,9 +104,9 @@
         const textInput = document.getElementById('text-input');
         const submitTextBtn = document.getElementById('submit-text-btn');
 
-        let isAuthorized = false; // 인증 상태 변수
+        let isAuthorized = false; 
 
-        // --- A. Google Tasks API 초기화 및 인증 (로직은 캘린더와 동일) ---
+        // --- A. 초기화 및 인증 ---
 
         function initClient() {
             gapi.client.init({
@@ -115,36 +115,34 @@
                 scope: SCOPES
             }).then(() => {
                 const authInstance = gapi.auth2.getAuthInstance();
-                
                 authInstance.isSignedIn.listen(updateSigninStatus);
                 updateSigninStatus(authInstance.isSignedIn.get());
                 
                 voiceBtn.addEventListener('click', () => {
-                    if (!isAuthorized) {
-                        handleAuthClick();
-                    } else {
-                        startVoiceRecognition();
-                    }
+                    if (!isAuthorized) handleAuthClick();
+                    else startVoiceRecognition();
                 });
                 submitTextBtn.addEventListener('click', () => {
-                    if (!isAuthorized) {
-                        handleAuthClick();
-                    } else {
-                        processSchedule(textInput.value);
-                    }
+                    if (!isAuthorized) handleAuthClick();
+                    else processSchedule(textInput.value);
                 });
 
             }).catch(error => {
-                statusMessage.textContent = '❌ Google API 초기화 오류: (' + (error.details || error.error) + ')';
+                // 에러 메시지를 좀 더 자세히 출력
+                const msg = error.details || error.error || JSON.stringify(error);
+                statusMessage.textContent = '❌ 초기화 오류: ' + msg;
+                if(msg.includes('origin_mismatch')) {
+                    statusMessage.textContent += ' (GitHub 주소가 승인된 원본에 등록되지 않았습니다)';
+                }
             });
         }
 
         function updateSigninStatus(isSignedIn) {
             isAuthorized = isSignedIn;
             if (isSignedIn) {
-                statusMessage.textContent = '✅ Google 에 연결되었습니다. 음성 또는 텍스트로 할 일을 말해주세요.';
+                statusMessage.textContent = '✅ Google 연결됨. 할 일을 말씀해주세요.';
             } else {
-                statusMessage.textContent = '⚠️ Google 연동을 위해 "말하기" 버튼을 눌러 인증해주세요.';
+                statusMessage.textContent = '⚠️ 연동을 위해 "말하기" 버튼을 눌러 로그인해주세요.';
             }
         }
 
@@ -154,10 +152,9 @@
 
         gapi.load('client:auth2', initClient); 
 
-        // --- B. Web Speech API (음성 인식) (로직 동일) ---
+        // --- B. 음성 인식 ---
 
         function startVoiceRecognition() {
-            // (음성 인식 코드는 이전과 동일)
             if (!('webkitSpeechRecognition' in window)) {
                 statusMessage.textContent = '⚠️ 이 브라우저는 음성 인식을 지원하지 않습니다.';
                 return;
@@ -168,91 +165,89 @@
             recognition.continuous = false;
             recognition.interimResults = false;
 
-            statusMessage.textContent = '🎤 말씀해주세요. 음성 입력이 시작됩니다...';
+            statusMessage.textContent = '🎤 듣고 있습니다...';
             recognition.start();
 
             recognition.onresult = (event) => {
                 const transcript = event.results[0][0].transcript;
                 voiceResult.textContent = transcript;
-                statusMessage.textContent = '인식 완료. 할 일 처리 중...';
+                statusMessage.textContent = '인식 완료. 처리 중...';
                 processSchedule(transcript); 
             };
 
             recognition.onerror = (event) => {
-                const errorMsg = event.error === 'not-allowed' ? '마이크 사용이 거부되었거나, 보안되지 않은 HTTP 환경입니다.' : event.error;
-                statusMessage.textContent = `❌ 음성 인식 오류: ${errorMsg}`;
+                statusMessage.textContent = `❌ 음성 인식 오류: ${event.error}`;
             };
         }
         
-        // --- C. 할 일 정보 파싱 및 Tasks API 호출 ---
+        // --- C. 할 일 처리 ---
 
         function processSchedule(text) {
             if (!isAuthorized) {
-                statusMessage.textContent = '❌ 먼저 Google Tasks에 인증해야 합니다.';
+                statusMessage.textContent = '❌ 먼저 로그인이 필요합니다.';
                 return;
             }
-
             if (!text.trim()) {
-                statusMessage.textContent = '⚠️ 입력된 내용이 없습니다.';
+                statusMessage.textContent = '⚠️ 내용이 없습니다.';
                 return;
             }
 
-            // 1. **간단한 규칙 기반 자연어 처리 (마감일만 처리)**
-            let title = text.replace(/내일|오늘/g, '').trim(); // 할 일 내용
-            let dueDate = null; // 마감일 (Tasks API 형식: YYYY-MM-DDTHH:MM:SS.000Z)
+            // 1. 날짜/시간 파싱
+            let title = text.replace(/내일|오늘/g, '').trim();
+            let dueDate = null; 
 
-            // '내일' 키워드 처리
             if (text.includes('내일')) {
                 dueDate = new Date();
                 dueDate.setDate(dueDate.getDate() + 1);
-                // 시간을 캘린더처럼 9시로 기본 설정 (태스크는 시간이 필수 아님)
-                dueDate.setHours(9, 0, 0, 0); 
+                dueDate.setHours(0, 0, 0, 0); 
             } else if (text.includes('오늘')) {
                 dueDate = new Date();
-                dueDate.setHours(9, 0, 0, 0); 
+                dueDate.setHours(0, 0, 0, 0); 
             }
             
-            // 시간 키워드 처리 (간단하게 현재 날짜에 시간만 반영)
+            // 시간 처리
             const timeMatch = text.match(/(오전|오후)?\s*(\d{1,2})\s*시/); 
             if (timeMatch) {
-                if (!dueDate) dueDate = new Date(); // 시간이 있으면 날짜 초기화
+                if (!dueDate) dueDate = new Date();
                 
                 let hour = parseInt(timeMatch[2]);
                 const ampm = timeMatch[1];
-                if (ampm === '오후' && hour < 12) { hour += 12; } 
-                else if (ampm === '오전' && hour === 12) { hour = 0; }
+                if (ampm === '오후' && hour < 12) hour += 12;
+                else if (ampm === '오전' && hour === 12) hour = 0;
                 
                 dueDate.setHours(hour, 0, 0, 0);
-                
-                // 불필요한 단어를 Title에서 제거
-                title = title.replace(timeMatch[0], '').replace(/(오전|오후)?\s*\d{1,2}\s*시/g, '').replace(/에|시간에|잡아줘|일정|미팅|약속/g, '').trim();
+                title = title.replace(timeMatch[0], '').replace(/(오전|오후)?\s*\d{1,2}\s*시/g, '').replace(/에|시간에|잡아줘|일정|미팅|약속|제출하기/g, '').trim();
             }
 
-            title = title || 'AI 비서가 추가한 할 일';
+            title = title || '새로운 할 일';
 
-            // 2. **Google Tasks 이벤트 생성**
-            const task = {
-                'title': title, // 할 일 내용
-            };
-            
+            // 2. Google Tasks 생성
+            const task = { 'title': title };
             if (dueDate) {
-                // Tasks API는 'due' 필드를 ISO 8601 UTC 형식으로 요구
-                task.due = dueDate.toISOString().replace(/\.\d{3}Z$/, 'Z');
+                // Tasks API는 RFC 3339 timestamp 형식을 요구 (UTC 'Z'로 끝나는 형식 권장)
+                task.due = dueDate.toISOString();
             }
             
-            statusMessage.textContent = `⏳ "${title}" 할 일을 Google Tasks에 요청 중...`;
+            statusMessage.textContent = `⏳ "${title}" 등록 중...`;
 
-            // **수정 3: Tasks API 호출로 변경**
             const request = gapi.client.tasks.tasks.insert({
-                'tasklist': '@default', // 사용자의 기본 할 일 목록
+                'tasklist': '@default',
                 'resource': task
             });
 
             request.execute((taskResponse) => {
+                // 여기가 이전에 잘렸던 부분입니다.
                 if (taskResponse.id) {
-                    let dueText = taskResponse.due ? new Date(taskResponse.due).toLocaleString('ko-KR') + '까지' : '';
-                    statusMessage.textContent = `✅ 할 일 추가 성공! (${taskResponse.title}) ${dueText}`;
+                    statusMessage.textContent = `✅ 등록 완료! (${taskResponse.title})`;
                     voiceResult.textContent = '';
                     textInput.value = '';
-                } else if (taskResponse
-
+                } else if (taskResponse.error) {
+                     statusMessage.textContent = `❌ 실패: ${taskResponse.error.message}`;
+                } else {
+                    statusMessage.textContent = '❌ 알 수 없는 오류가 발생했습니다.';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
