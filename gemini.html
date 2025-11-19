@@ -29,59 +29,25 @@
             font-weight: bold;
             transition: background-color 0.3s;
         }
-        #start-voice-btn {
-            background-color: #007bff;
-            color: white;
-        }
+        #start-voice-btn { background-color: #007bff; color: white; }
         #start-voice-btn:hover { background-color: #0056b3; }
-        #submit-text-btn {
-            background-color: #28a745;
-            color: white;
-        }
+        #submit-text-btn { background-color: #28a745; color: white; }
         #submit-text-btn:hover { background-color: #1e7e34; }
-        #voice-result { 
-            font-weight: bold; 
-            color: #d9534f; 
-            display: block;
-            margin-top: 5px;
-        }
+        #voice-result { font-weight: bold; color: #d9534f; display: block; margin-top: 5px; }
         #status-message { 
-            color: #007bff; 
-            margin-top: 15px; 
-            font-size: 1.1em;
-            padding: 10px;
-            border: 1px solid #cce5ff;
-            background-color: #e2f0ff;
-            border-radius: 5px;
+            color: #007bff; margin-top: 15px; font-size: 1.1em; padding: 10px; 
+            border: 1px solid #cce5ff; background-color: #e2f0ff; border-radius: 5px; 
         }
         input[type="text"] {
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 16px;
-            box-sizing: border-box;
-            width: 70%;
+            padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; 
+            box-sizing: border-box; width: 70%;
         }
-        label {
-            display: block;
-            margin-top: 15px;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        /* 아이프레임 반응형 스타일 추가 */
+        label { display: block; margin-top: 15px; margin-bottom: 5px; font-weight: bold; }
         .calendar-container {
-            margin-top: 30px;
-            position: relative;
-            padding-bottom: 75%; /* 4:3 비율 */
-            height: 0;
-            overflow: hidden;
+            margin-top: 30px; position: relative; padding-bottom: 75%; height: 0; overflow: hidden;
         }
         .calendar-container iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
         }
     </style>
 </head>
@@ -97,82 +63,104 @@
     <input type="text" id="text-input" placeholder="예: 내일 오후 3시에 보고서 제출하기">
     <button id="submit-text-btn">할 일 추가</button>
 
-    <p id="status-message">연동을 위해 인증이 필요할 수 있습니다.</p>
+    <p id="status-message">연동을 위해 [말하기] 또는 [할 일 추가] 버튼을 눌러주세요.</p>
     
     <div class="calendar-container">
         <iframe src="https://calendar.google.com/calendar/embed?src=cce03f167bf28bafd3795833209784265eadca0ed8138cae7d9024470ad36c66%40group.calendar.google.com&ctz=Asia%2FSeoul" style="border: 0" frameborder="0" scrolling="no"></iframe>
     </div>
 
-    <script src="https://apis.google.com/js/api.js"></script> 
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client"></script>
 
     <script>
-        /* 🚨 수정됨: 여기에는 'Calendar ID'가 아니라 
-           이전에 사용하시던 'OAuth Client ID'가 들어가야 합니다.
-           (10499... 로 시작하는 값)
-        */
+        /* ============================================================
+           🚨 [설정] 방금 만든 새 클라이언트 ID를 아래에 넣으세요.
+           (이메일이나 캘린더 주소 금지! 숫자-영어.apps... 형식이어야 함)
+           ============================================================ */
         const CLIENT_ID = '1049915608396-i3jn8jrm24bc9mkagdtokk3rfa3li513.apps.googleusercontent.com'; 
-        
-        const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/tasks/v1/rest"];
+
         const SCOPES = 'https://www.googleapis.com/auth/tasks'; 
+        const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/tasks/v1/rest"];
 
-        const voiceBtn = document.getElementById('start-voice-btn');
-        const voiceResult = document.getElementById('voice-result');
+        let tokenClient;
+        let gapiInited = false;
+        let gisInited = false;
+
         const statusMessage = document.getElementById('status-message');
+        const voiceResult = document.getElementById('voice-result');
         const textInput = document.getElementById('text-input');
-        const submitTextBtn = document.getElementById('submit-text-btn');
 
-        let isAuthorized = false; 
-
-        // --- A. 초기화 및 인증 ---
-
-        function initClient() {
-            gapi.client.init({
-                clientId: CLIENT_ID,
-                discoveryDocs: DISCOVERY_DOCS,
-                scope: SCOPES
-            }).then(() => {
-                const authInstance = gapi.auth2.getAuthInstance();
-                authInstance.isSignedIn.listen(updateSigninStatus);
-                updateSigninStatus(authInstance.isSignedIn.get());
-                
-                voiceBtn.addEventListener('click', () => {
-                    if (!isAuthorized) handleAuthClick();
-                    else startVoiceRecognition();
-                });
-                submitTextBtn.addEventListener('click', () => {
-                    if (!isAuthorized) handleAuthClick();
-                    else processSchedule(textInput.value);
-                });
-
-            }).catch(error => {
-                const msg = error.details || error.error || JSON.stringify(error);
-                statusMessage.textContent = '❌ 초기화 오류: ' + msg;
-            });
+        // 1. GAPI (Tasks API 기능) 로드
+        function gapiLoaded() {
+            gapi.load('client', intializeGapiClient);
         }
 
-        function updateSigninStatus(isSignedIn) {
-            isAuthorized = isSignedIn;
-            if (isSignedIn) {
-                statusMessage.textContent = '✅ Google Tasks 연결됨. 할 일을 말씀해주세요.';
-            } else {
-                statusMessage.textContent = '⚠️ 연동을 위해 "말하기" 버튼을 눌러 로그인해주세요.';
+        async function intializeGapiClient() {
+            await gapi.client.init({
+                discoveryDocs: DISCOVERY_DOCS,
+            });
+            gapiInited = true;
+            maybeEnableButtons();
+        }
+
+        // 2. GIS (새로운 로그인 방식) 로드
+        function gisLoaded() {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CLIENT_ID,
+                scope: SCOPES,
+                callback: '', // 나중에 요청 시 정의
+            });
+            gisInited = true;
+            maybeEnableButtons();
+        }
+
+        function maybeEnableButtons() {
+            if (gapiInited && gisInited) {
+                statusMessage.textContent = "✅ 시스템 준비 완료. 버튼을 눌러 시작하세요.";
             }
         }
 
-        function handleAuthClick() {
-            gapi.auth2.getAuthInstance().signIn();
+        // 3. 인증 및 작업 처리 함수
+        function handleAuthAndAction(actionCallback) {
+            // 이미 토큰이 있으면 바로 실행
+            if (gapi.client.getToken() !== null) {
+                actionCallback();
+                return;
+            }
+
+            // 토큰이 없으면 로그인 창 띄우기
+            tokenClient.callback = async (resp) => {
+                if (resp.error !== undefined) {
+                    throw (resp);
+                }
+                statusMessage.textContent = "✅ 로그인 성공! 작업을 수행합니다...";
+                actionCallback();
+            };
+            tokenClient.requestAccessToken({prompt: 'consent'});
         }
 
-        gapi.load('client:auth2', initClient); 
+        // --- 이벤트 리스너 등록 ---
+        
+        // 라이브러리 로드 시작
+        gapiLoaded();
+        gisLoaded();
 
-        // --- B. 음성 인식 ---
+        document.getElementById('start-voice-btn').onclick = () => {
+            handleAuthAndAction(startVoiceRecognition);
+        };
+
+        document.getElementById('submit-text-btn').onclick = () => {
+            handleAuthAndAction(() => processSchedule(textInput.value));
+        };
+
+
+        // --- 기능 로직 (음성 인식 & 할일 추가) ---
 
         function startVoiceRecognition() {
             if (!('webkitSpeechRecognition' in window)) {
                 statusMessage.textContent = '⚠️ 이 브라우저는 음성 인식을 지원하지 않습니다.';
                 return;
             }
-
             const recognition = new webkitSpeechRecognition();
             recognition.lang = 'ko-KR';
             recognition.continuous = false;
@@ -184,22 +172,14 @@
             recognition.onresult = (event) => {
                 const transcript = event.results[0][0].transcript;
                 voiceResult.textContent = transcript;
-                statusMessage.textContent = '인식 완료. 처리 중...';
                 processSchedule(transcript); 
             };
-
             recognition.onerror = (event) => {
                 statusMessage.textContent = `❌ 음성 인식 오류: ${event.error}`;
             };
         }
-        
-        // --- C. 할 일 처리 ---
 
         function processSchedule(text) {
-            if (!isAuthorized) {
-                statusMessage.textContent = '❌ 먼저 로그인이 필요합니다.';
-                return;
-            }
             if (!text.trim()) {
                 statusMessage.textContent = '⚠️ 내용이 없습니다.';
                 return;
@@ -208,6 +188,7 @@
             let title = text.replace(/내일|오늘/g, '').trim();
             let dueDate = null; 
 
+            // 날짜 계산
             if (text.includes('내일')) {
                 dueDate = new Date();
                 dueDate.setDate(dueDate.getDate() + 1);
@@ -217,46 +198,35 @@
                 dueDate.setHours(0, 0, 0, 0); 
             }
             
+            // 시간 파싱
             const timeMatch = text.match(/(오전|오후)?\s*(\d{1,2})\s*시/); 
             if (timeMatch) {
                 if (!dueDate) dueDate = new Date();
-                
                 let hour = parseInt(timeMatch[2]);
                 const ampm = timeMatch[1];
                 if (ampm === '오후' && hour < 12) hour += 12;
                 else if (ampm === '오전' && hour === 12) hour = 0;
-                
                 dueDate.setHours(hour, 0, 0, 0);
                 title = title.replace(timeMatch[0], '').replace(/(오전|오후)?\s*\d{1,2}\s*시/g, '').replace(/에|시간에|잡아줘|일정|미팅|약속|제출하기/g, '').trim();
             }
 
             title = title || '새로운 할 일';
-
             const task = { 'title': title };
-            if (dueDate) {
-                task.due = dueDate.toISOString();
-            }
+            if (dueDate) task.due = dueDate.toISOString();
             
-            statusMessage.textContent = `⏳ "${title}" 등록 중...`;
+            statusMessage.textContent = `⏳ "${title}" 구글 태스크에 저장 중...`;
 
-            const request = gapi.client.tasks.tasks.insert({
+            gapi.client.tasks.tasks.insert({
                 'tasklist': '@default',
                 'resource': task
-            });
-
-            request.execute((taskResponse) => {
-                if (taskResponse.id) {
-                    statusMessage.textContent = `✅ 등록 완료! (${taskResponse.title})`;
-                    voiceResult.textContent = '';
-                    textInput.value = '';
-                } else if (taskResponse.error) {
-                     statusMessage.textContent = `❌ 실패: ${taskResponse.error.message}`;
-                } else {
-                    statusMessage.textContent = '❌ 알 수 없는 오류가 발생했습니다.';
-                }
+            }).then((response) => {
+                statusMessage.textContent = `✅ 저장 완료! (${response.result.title})`;
+                voiceResult.textContent = '';
+                textInput.value = '';
+            }).catch((err) => {
+                statusMessage.textContent = `❌ 저장 실패: ${err.result.error.message}`;
             });
         }
     </script>
 </body>
 </html>
-
