@@ -33,6 +33,32 @@
         #start-voice-btn:hover { background-color: #0056b3; }
         #submit-text-btn { background-color: #28a745; color: white; }
         #submit-text-btn:hover { background-color: #1e7e34; }
+        
+        /* 리스트 스타일 추가 */
+        .task-section {
+            background: white;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        .task-section h3 {
+            margin-top: 0;
+            color: #444;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 5px; color: #555; }
+        .date-badge {
+            font-size: 0.8em;
+            background-color: #eee;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 8px;
+            color: #666;
+        }
+
         #voice-result { font-weight: bold; color: #d9534f; display: block; margin-top: 5px; }
         #status-message { 
             color: #007bff; margin-top: 15px; font-size: 1.1em; padding: 10px; 
@@ -43,6 +69,8 @@
             box-sizing: border-box; width: 70%;
         }
         label { display: block; margin-top: 15px; margin-bottom: 5px; font-weight: bold; }
+        
+        /* 캘린더 아이프레임 (필요하면 유지, 아니면 삭제 가능) */
         .calendar-container {
             margin-top: 30px; position: relative; padding-bottom: 75%; height: 0; overflow: hidden;
         }
@@ -63,8 +91,18 @@
     <input type="text" id="text-input" placeholder="예: 내일 오후 3시에 보고서 제출하기">
     <button id="submit-text-btn">할 일 추가</button>
 
-    <p id="status-message">연동을 위해 [말하기] 또는 [할 일 추가] 버튼을 눌러주세요.</p>
+    <p id="status-message">시스템 준비 중...</p>
     
+    <div class="task-section">
+        <h3>📅 오늘 일정 (Today)</h3>
+        <ul id="today-list"><li>로그인이 필요합니다.</li></ul>
+    </div>
+
+    <div class="task-section">
+        <h3>🗓️ 이번 주 일정 (This Week)</h3>
+        <ul id="week-list"><li>로그인이 필요합니다.</li></ul>
+    </div>
+
     <div class="calendar-container">
         <iframe src="https://calendar.google.com/calendar/embed?src=cce03f167bf28bafd3795833209784265eadca0ed8138cae7d9024470ad36c66%40group.calendar.google.com&ctz=Asia%2FSeoul" style="border: 0" frameborder="0" scrolling="no"></iframe>
     </div>
@@ -73,11 +111,8 @@
     <script src="https://accounts.google.com/gsi/client"></script>
 
     <script>
-        /* ============================================================
-           🚨 [설정] 방금 만든 새 클라이언트 ID를 아래에 넣으세요.
-           (이메일이나 캘린더 주소 금지! 숫자-영어.apps... 형식이어야 함)
-           ============================================================ */
-        const CLIENT_ID = '1049915608396-i3jn8jrm24bc9mkagdtokk3rfa3li513.apps.googleusercontent.com'; 
+        /* 🚨 [설정] 클라이언트 ID (기존에 쓰시던 것 그대로 두세요) */
+        const CLIENT_ID = '1049915608396-4saprmlim0i9t9jv2dhkje4eq6uqqlnr.apps.googleusercontent.com'; 
 
         const SCOPES = 'https://www.googleapis.com/auth/tasks'; 
         const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/tasks/v1/rest"];
@@ -89,26 +124,22 @@
         const statusMessage = document.getElementById('status-message');
         const voiceResult = document.getElementById('voice-result');
         const textInput = document.getElementById('text-input');
+        const todayList = document.getElementById('today-list');
+        const weekList = document.getElementById('week-list');
 
-        // 1. GAPI (Tasks API 기능) 로드
-        function gapiLoaded() {
-            gapi.load('client', intializeGapiClient);
-        }
+        function gapiLoaded() { gapi.load('client', intializeGapiClient); }
 
         async function intializeGapiClient() {
-            await gapi.client.init({
-                discoveryDocs: DISCOVERY_DOCS,
-            });
+            await gapi.client.init({ discoveryDocs: DISCOVERY_DOCS });
             gapiInited = true;
             maybeEnableButtons();
         }
 
-        // 2. GIS (새로운 로그인 방식) 로드
         function gisLoaded() {
             tokenClient = google.accounts.oauth2.initTokenClient({
                 client_id: CLIENT_ID,
                 scope: SCOPES,
-                callback: '', // 나중에 요청 시 정의
+                callback: '',
             });
             gisInited = true;
             maybeEnableButtons();
@@ -116,32 +147,29 @@
 
         function maybeEnableButtons() {
             if (gapiInited && gisInited) {
-                statusMessage.textContent = "✅ 시스템 준비 완료. 버튼을 눌러 시작하세요.";
+                statusMessage.textContent = "✅ 준비 완료. [말하기] 버튼을 눌러 시작하세요.";
+                
+                // 만약 이미 로그인 되어 있다면 리스트 바로 불러오기
+                if (gapi.client.getToken() !== null) {
+                    loadTasksList();
+                }
             }
         }
 
-        // 3. 인증 및 작업 처리 함수
         function handleAuthAndAction(actionCallback) {
-            // 이미 토큰이 있으면 바로 실행
             if (gapi.client.getToken() !== null) {
                 actionCallback();
                 return;
             }
-
-            // 토큰이 없으면 로그인 창 띄우기
             tokenClient.callback = async (resp) => {
-                if (resp.error !== undefined) {
-                    throw (resp);
-                }
-                statusMessage.textContent = "✅ 로그인 성공! 작업을 수행합니다...";
+                if (resp.error !== undefined) throw (resp);
+                statusMessage.textContent = "✅ 로그인 성공!";
                 actionCallback();
+                loadTasksList(); // 로그인 직후 리스트 갱신
             };
             tokenClient.requestAccessToken({prompt: 'consent'});
         }
 
-        // --- 이벤트 리스너 등록 ---
-        
-        // 라이브러리 로드 시작
         gapiLoaded();
         gisLoaded();
 
@@ -153,12 +181,74 @@
             handleAuthAndAction(() => processSchedule(textInput.value));
         };
 
+        // --- 일정(할 일) 목록 불러오기 함수 ---
+        async function loadTasksList() {
+            try {
+                const response = await gapi.client.tasks.tasks.list({
+                    'tasklist': '@default',
+                    'showCompleted': false,
+                    'showHidden': false
+                });
+                
+                const tasks = response.result.items || [];
+                
+                // 리스트 초기화
+                todayList.innerHTML = '';
+                weekList.innerHTML = '';
 
-        // --- 기능 로직 (음성 인식 & 할일 추가) ---
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                
+                const nextWeek = new Date();
+                nextWeek.setDate(today.getDate() + 7);
 
+                let todayCount = 0;
+                let weekCount = 0;
+
+                tasks.forEach(task => {
+                    let li = document.createElement('li');
+                    li.textContent = task.title;
+
+                    if (task.due) {
+                        // 구글 Tasks 날짜 형식 처리
+                        const dueDate = new Date(task.due);
+                        // 시간 보정 (Tasks API는 UTC 기준이라 한국 시간으로 맞춤)
+                        dueDate.setHours(0,0,0,0); 
+
+                        // 날짜 배지 표시
+                        const dateString = (dueDate.getMonth()+1) + "/" + dueDate.getDate();
+                        li.innerHTML += ` <span class="date-badge">${dateString}</span>`;
+
+                        // 날짜 비교
+                        // 오늘 일정
+                        if (dueDate.toDateString() === today.toDateString()) {
+                            todayList.appendChild(li);
+                            todayCount++;
+                        } 
+                        // 이번 주 일정 (오늘 제외 ~ 7일 후)
+                        else if (dueDate > today && dueDate <= nextWeek) {
+                            weekList.appendChild(li);
+                            weekCount++;
+                        }
+                    } else {
+                        // 날짜 없는 할 일은 그냥 이번 주 목록 밑에 참고용으로 (선택 사항)
+                        // weekList.appendChild(li); 
+                    }
+                });
+
+                if (todayCount === 0) todayList.innerHTML = '<li>오늘 예정된 일정이 없습니다.</li>';
+                if (weekCount === 0) weekList.innerHTML = '<li>이번 주 예정된 일정이 없습니다.</li>';
+
+            } catch (err) {
+                console.error(err);
+                todayList.innerHTML = '<li>일정을 불러오지 못했습니다.</li>';
+            }
+        }
+
+        // --- 음성 및 일정 추가 로직 ---
         function startVoiceRecognition() {
             if (!('webkitSpeechRecognition' in window)) {
-                statusMessage.textContent = '⚠️ 이 브라우저는 음성 인식을 지원하지 않습니다.';
+                statusMessage.textContent = '⚠️ 음성 인식 미지원 브라우저입니다.';
                 return;
             }
             const recognition = new webkitSpeechRecognition();
@@ -175,20 +265,16 @@
                 processSchedule(transcript); 
             };
             recognition.onerror = (event) => {
-                statusMessage.textContent = `❌ 음성 인식 오류: ${event.error}`;
+                statusMessage.textContent = `❌ 오류: ${event.error}`;
             };
         }
 
         function processSchedule(text) {
-            if (!text.trim()) {
-                statusMessage.textContent = '⚠️ 내용이 없습니다.';
-                return;
-            }
+            if (!text.trim()) { statusMessage.textContent = '⚠️ 내용이 없습니다.'; return; }
 
             let title = text.replace(/내일|오늘/g, '').trim();
             let dueDate = null; 
 
-            // 날짜 계산
             if (text.includes('내일')) {
                 dueDate = new Date();
                 dueDate.setDate(dueDate.getDate() + 1);
@@ -198,7 +284,6 @@
                 dueDate.setHours(0, 0, 0, 0); 
             }
             
-            // 시간 파싱
             const timeMatch = text.match(/(오전|오후)?\s*(\d{1,2})\s*시/); 
             if (timeMatch) {
                 if (!dueDate) dueDate = new Date();
@@ -214,7 +299,7 @@
             const task = { 'title': title };
             if (dueDate) task.due = dueDate.toISOString();
             
-            statusMessage.textContent = `⏳ "${title}" 구글 태스크에 저장 중...`;
+            statusMessage.textContent = `⏳ 저장 중...`;
 
             gapi.client.tasks.tasks.insert({
                 'tasklist': '@default',
@@ -223,8 +308,10 @@
                 statusMessage.textContent = `✅ 저장 완료! (${response.result.title})`;
                 voiceResult.textContent = '';
                 textInput.value = '';
+                // 저장 후 리스트 새로고침
+                loadTasksList();
             }).catch((err) => {
-                statusMessage.textContent = `❌ 저장 실패: ${err.result.error.message}`;
+                statusMessage.textContent = `❌ 실패: ${err.result.error.message}`;
             });
         }
     </script>
