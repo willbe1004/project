@@ -3,12 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 일정 비서 (단일 파일)</title>
+    <title>AI 할 일 비서 (Google Tasks)</title>
     <style>
-        /* ========================================
-        1. 스타일 (CSS) 영역
-        ========================================
-        */
+        /* (CSS 스타일은 이전과 동일합니다.) */
         body { 
             font-family: 'Malgun Gothic', '맑은 고딕', sans-serif; 
             max-width: 600px; 
@@ -75,31 +72,31 @@
     </style>
 </head>
 <body>
-    <h1>🤖 AI 일정 관리 비서</h1>
+    <h1>📝 AI 할 일 비서 (Google Tasks)</h1>
     
-    <button id="start-voice-btn">🎤 음성으로 일정 말하기</button>
+    <button id="start-voice-btn">🎤 음성으로 할 일 말하기</button>
     <p>인식된 내용: <span id="voice-result"></span></p>
 
     <hr>
 
     <label for="text-input">텍스트 입력:</label>
-    <input type="text" id="text-input" placeholder="예: 내일 오전 10시에 회의 일정 잡아줘">
-    <button id="submit-text-btn">일정 추가</button>
+    <input type="text" id="text-input" placeholder="예: 내일 오후 3시에 보고서 제출하기">
+    <button id="submit-text-btn">할 일 추가</button>
 
-    <p id="status-message">Google 캘린더 연동을 위해 인증이 필요할 수 있습니다.</p>
+    <p id="status-message">Google Tasks 연동을 위해 인증이 필요할 수 있습니다.</p>
     
     <script src="https://apis.google.com/js/api.js"></script> 
 
     <script>
-        /* ========================================
-        2. 기능 (JavaScript) 영역
-        ========================================
-        */
-
         // 🚨 중요: 여기에 Google Cloud Console에서 발급받은 클라이언트 ID를 입력하세요.
-        const CLIENT_ID = '1049915608396-s9qeaqhvmo8838jv86b31tts0elhda7a.apps.googleusercontent.com'; 
-        const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest"];
-        const SCOPES = 'https://www.googleapis.com/auth/calendar.events'; // 일정 생성 권한
+        // 기존 캘린더 프로젝트의 ID를 그대로 사용합니다.
+        const CLIENT_ID = '1049915608396-4saprmlim0i9t9jv2dhkje4eq6uqqlnr.apps.googleusercontent.com'; 
+        
+        // **수정 1: Tasks API 문서로 변경**
+        const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/tasks/v1/rest"];
+        
+        // **수정 2: Tasks 권한 범위로 변경**
+        const SCOPES = 'https://www.googleapis.com/auth/tasks'; 
 
         const voiceBtn = document.getElementById('start-voice-btn');
         const voiceResult = document.getElementById('voice-result');
@@ -109,7 +106,7 @@
 
         let isAuthorized = false; // 인증 상태 변수
 
-        // --- A. Google Calendar API 초기화 및 인증 ---
+        // --- A. Google Tasks API 초기화 및 인증 (로직은 캘린더와 동일) ---
 
         function initClient() {
             gapi.client.init({
@@ -138,16 +135,16 @@
                 });
 
             }).catch(error => {
-                statusMessage.textContent = '❌ Google API 초기화 오류: 클라이언트 ID 또는 네트워크 연결 확인 (' + (error.details || error.error) + ')';
+                statusMessage.textContent = '❌ Google API 초기화 오류: (' + (error.details || error.error) + ')';
             });
         }
 
         function updateSigninStatus(isSignedIn) {
             isAuthorized = isSignedIn;
             if (isSignedIn) {
-                statusMessage.textContent = '✅ Google 캘린더에 연결되었습니다. 음성 또는 텍스트로 일정을 말해주세요.';
+                statusMessage.textContent = '✅ Google Tasks에 연결되었습니다. 음성 또는 텍스트로 할 일을 말해주세요.';
             } else {
-                statusMessage.textContent = '⚠️ Google 캘린더 연동을 위해 "음성으로 일정 말하기" 버튼을 눌러 인증해주세요.';
+                statusMessage.textContent = '⚠️ Google Tasks 연동을 위해 "음성으로 할 일 말하기" 버튼을 눌러 인증해주세요.';
             }
         }
 
@@ -157,12 +154,12 @@
 
         gapi.load('client:auth2', initClient); 
 
-        // --- B. Web Speech API (음성 인식) ---
+        // --- B. Web Speech API (음성 인식) (로직 동일) ---
 
         function startVoiceRecognition() {
-            // 안드로이드 모바일 환경에서는 'webkitSpeechRecognition'만 지원하는 경우가 많으므로 이를 사용
+            // (음성 인식 코드는 이전과 동일)
             if (!('webkitSpeechRecognition' in window)) {
-                statusMessage.textContent = '⚠️ 이 브라우저는 음성 인식을 지원하지 않습니다. (Chrome 또는 HTTPS 환경 권장)';
+                statusMessage.textContent = '⚠️ 이 브라우저는 음성 인식을 지원하지 않습니다.';
                 return;
             }
 
@@ -177,7 +174,7 @@
             recognition.onresult = (event) => {
                 const transcript = event.results[0][0].transcript;
                 voiceResult.textContent = transcript;
-                statusMessage.textContent = '인식 완료. 일정 처리 중...';
+                statusMessage.textContent = '인식 완료. 할 일 처리 중...';
                 processSchedule(transcript); 
             };
 
@@ -187,11 +184,11 @@
             };
         }
         
-        // --- C. 일정 정보 파싱 및 Calendar API 호출 (핵심 로직) ---
+        // --- C. 할 일 정보 파싱 및 Tasks API 호출 ---
 
         function processSchedule(text) {
             if (!isAuthorized) {
-                statusMessage.textContent = '❌ 먼저 Google 캘린더에 인증해야 합니다.';
+                statusMessage.textContent = '❌ 먼저 Google Tasks에 인증해야 합니다.';
                 return;
             }
 
@@ -200,70 +197,61 @@
                 return;
             }
 
-            // 1. **간단한 규칙 기반 자연어 처리**
-            let summary = text;
-            let date = new Date(); 
-            date.setHours(0, 0, 0, 0); 
+            // 1. **간단한 규칙 기반 자연어 처리 (마감일만 처리)**
+            let title = text.replace(/내일|오늘/g, '').trim(); // 할 일 내용
+            let dueDate = null; // 마감일 (Tasks API 형식: YYYY-MM-DDTHH:MM:SS.000Z)
 
             // '내일' 키워드 처리
             if (text.includes('내일')) {
-                date.setDate(date.getDate() + 1);
-                summary = summary.replace('내일', '').trim();
+                dueDate = new Date();
+                dueDate.setDate(dueDate.getDate() + 1);
+                // 시간을 캘린더처럼 9시로 기본 설정 (태스크는 시간이 필수 아님)
+                dueDate.setHours(9, 0, 0, 0); 
             } else if (text.includes('오늘')) {
-                summary = summary.replace('오늘', '').trim();
+                dueDate = new Date();
+                dueDate.setHours(9, 0, 0, 0); 
             }
-
-            // 시간 키워드 처리 (예: 10시, 오후 3시 등)
-            const timeMatch = text.match(/(오전|오후)?\s*(\d{1,2})\s*시/); 
             
+            // 시간 키워드 처리 (간단하게 현재 날짜에 시간만 반영)
+            const timeMatch = text.match(/(오전|오후)?\s*(\d{1,2})\s*시/); 
             if (timeMatch) {
+                if (!dueDate) dueDate = new Date(); // 시간이 있으면 날짜 초기화
+                
                 let hour = parseInt(timeMatch[2]);
                 const ampm = timeMatch[1];
-
-                if (ampm === '오후' && hour < 12) {
-                    hour += 12; 
-                } else if (ampm === '오전' && hour === 12) {
-                    hour = 0; // 오전 12시 (자정)
-                }
+                if (ampm === '오후' && hour < 12) { hour += 12; } 
+                else if (ampm === '오전' && hour === 12) { hour = 0; }
                 
-                date.setHours(hour, 0, 0, 0);
+                dueDate.setHours(hour, 0, 0, 0);
                 
-                // 불필요한 단어를 Summary에서 제거
-                summary = summary.replace(timeMatch[0], '').replace(/(오전|오후)?\s*\d{1,2}\s*시/g, '').replace(/에|시간에|잡아줘|일정|미팅|약속/g, '').trim();
-            } else {
-                // 시간 키워드가 없으면 기본 시작 시간을 오전 9시로 설정 
-                date.setHours(9, 0, 0, 0); 
+                // 불필요한 단어를 Title에서 제거
+                title = title.replace(timeMatch[0], '').replace(/(오전|오후)?\s*\d{1,2}\s*시/g, '').replace(/에|시간에|잡아줘|일정|미팅|약속/g, '').trim();
             }
-            
-            summary = summary || 'AI 비서가 추가한 일정';
 
-            // 2. **Google Calendar 이벤트 생성**
-            const event = {
-                'summary': summary,
-                'start': {'dateTime': date.toISOString(), 'timeZone': 'Asia/Seoul'},
-                'end': {'dateTime': new Date(date.getTime() + 3600000).toISOString(), 'timeZone': 'Asia/Seoul'}, // 기본 1시간 후 종료
+            title = title || 'AI 비서가 추가한 할 일';
+
+            // 2. **Google Tasks 이벤트 생성**
+            const task = {
+                'title': title, // 할 일 내용
             };
             
-            statusMessage.textContent = `⏳ "${summary}" 일정을 ${new Date(date).toLocaleString('ko-KR')}에 캘린더에 요청 중...`;
+            if (dueDate) {
+                // Tasks API는 'due' 필드를 ISO 8601 UTC 형식으로 요구
+                task.due = dueDate.toISOString().replace(/\.\d{3}Z$/, 'Z');
+            }
+            
+            statusMessage.textContent = `⏳ "${title}" 할 일을 Google Tasks에 요청 중...`;
 
-            const request = gapi.client.calendar.events.insert({
-                'calendarId': 'primary', // 사용자의 주 캘린더
-                'resource': event
+            // **수정 3: Tasks API 호출로 변경**
+            const request = gapi.client.tasks.tasks.insert({
+                'tasklist': '@default', // 사용자의 기본 할 일 목록
+                'resource': task
             });
 
-            request.execute((event) => {
-                if (event.id) {
-                    statusMessage.textContent = `✅ 일정 추가 성공! (${event.summary})`;
+            request.execute((taskResponse) => {
+                if (taskResponse.id) {
+                    let dueText = taskResponse.due ? new Date(taskResponse.due).toLocaleString('ko-KR') + '까지' : '';
+                    statusMessage.textContent = `✅ 할 일 추가 성공! (${taskResponse.title}) ${dueText}`;
                     voiceResult.textContent = '';
                     textInput.value = '';
-                } else if (event.error) {
-                     statusMessage.textContent = `❌ 일정 추가 실패: ${event.error.message}. 인증 및 원본 URL을 확인해 주세요.`;
-                } else {
-                    statusMessage.textContent = '❌ 알 수 없는 일정 추가 오류.';
-                }
-            });
-        }
-    </script>
-</body>
-
-</html>
+                } else if (taskResponse
