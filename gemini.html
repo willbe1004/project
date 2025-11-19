@@ -68,6 +68,21 @@
             margin-bottom: 5px;
             font-weight: bold;
         }
+        /* 아이프레임 반응형 스타일 추가 */
+        .calendar-container {
+            margin-top: 30px;
+            position: relative;
+            padding-bottom: 75%; /* 4:3 비율 */
+            height: 0;
+            overflow: hidden;
+        }
+        .calendar-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
     </style>
 </head>
 <body>
@@ -84,16 +99,18 @@
 
     <p id="status-message">연동을 위해 인증이 필요할 수 있습니다.</p>
     
+    <div class="calendar-container">
+        <iframe src="https://calendar.google.com/calendar/embed?src=cce03f167bf28bafd3795833209784265eadca0ed8138cae7d9024470ad36c66%40group.calendar.google.com&ctz=Asia%2FSeoul" style="border: 0" frameborder="0" scrolling="no"></iframe>
+    </div>
+
     <script src="https://apis.google.com/js/api.js"></script> 
 
     <script>
-        /* 🚨 [매우 중요] 
-           아래 CLIENT_ID는 예시입니다. 
-           반드시 구글 클라우드 콘솔 > 사용자 인증 정보 > OAuth 2.0 클라이언트 ID에서 
-           '10499...' 로 시작하고 '.apps.googleusercontent.com'으로 끝나는 값을 복사해 넣으세요.
-           (이메일 주소나 캘린더 주소를 넣으면 안 됩니다!)
+        /* 🚨 수정됨: 여기에는 'Calendar ID'가 아니라 
+           이전에 사용하시던 'OAuth Client ID'가 들어가야 합니다.
+           (10499... 로 시작하는 값)
         */
-        const CLIENT_ID = 'cce03f167bf28bafd3795833209784265eadca0ed8138cae7d9024470ad36c66@group.calendar.google.com'; 
+        const CLIENT_ID = '1049915608396-4saprmlim0i9t9jv2dhkje4eq6uqqlnr.apps.googleusercontent.com'; 
         
         const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/tasks/v1/rest"];
         const SCOPES = 'https://www.googleapis.com/auth/tasks'; 
@@ -128,19 +145,15 @@
                 });
 
             }).catch(error => {
-                // 에러 메시지를 좀 더 자세히 출력
                 const msg = error.details || error.error || JSON.stringify(error);
                 statusMessage.textContent = '❌ 초기화 오류: ' + msg;
-                if(msg.includes('origin_mismatch')) {
-                    statusMessage.textContent += ' (GitHub 주소가 승인된 원본에 등록되지 않았습니다)';
-                }
             });
         }
 
         function updateSigninStatus(isSignedIn) {
             isAuthorized = isSignedIn;
             if (isSignedIn) {
-                statusMessage.textContent = '✅ Google 연결됨. 할 일을 말씀해주세요.';
+                statusMessage.textContent = '✅ Google Tasks 연결됨. 할 일을 말씀해주세요.';
             } else {
                 statusMessage.textContent = '⚠️ 연동을 위해 "말하기" 버튼을 눌러 로그인해주세요.';
             }
@@ -192,7 +205,6 @@
                 return;
             }
 
-            // 1. 날짜/시간 파싱
             let title = text.replace(/내일|오늘/g, '').trim();
             let dueDate = null; 
 
@@ -205,7 +217,6 @@
                 dueDate.setHours(0, 0, 0, 0); 
             }
             
-            // 시간 처리
             const timeMatch = text.match(/(오전|오후)?\s*(\d{1,2})\s*시/); 
             if (timeMatch) {
                 if (!dueDate) dueDate = new Date();
@@ -221,10 +232,8 @@
 
             title = title || '새로운 할 일';
 
-            // 2. Google Tasks 생성
             const task = { 'title': title };
             if (dueDate) {
-                // Tasks API는 RFC 3339 timestamp 형식을 요구 (UTC 'Z'로 끝나는 형식 권장)
                 task.due = dueDate.toISOString();
             }
             
@@ -236,7 +245,6 @@
             });
 
             request.execute((taskResponse) => {
-                // 여기가 이전에 잘렸던 부분입니다.
                 if (taskResponse.id) {
                     statusMessage.textContent = `✅ 등록 완료! (${taskResponse.title})`;
                     voiceResult.textContent = '';
@@ -250,6 +258,4 @@
         }
     </script>
 </body>
-    <iframe src="https://calendar.google.com/calendar/embed?src=cce03f167bf28bafd3795833209784265eadca0ed8138cae7d9024470ad36c66%40group.calendar.google.com&ctz=Asia%2FSeoul" style="border: 0" width="800" height="600" frameborder="0" scrolling="no"></iframe>
 </html>
-
