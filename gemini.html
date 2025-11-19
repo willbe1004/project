@@ -7,58 +7,119 @@
     <style>
         body { 
             font-family: 'Malgun Gothic', '맑은 고딕', sans-serif; 
-            max-width: 600px; margin: 0 auto; padding: 20px; 
-            background-color: #f4f7f9; border-radius: 8px; 
+            max-width: 600px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            background-color: #f4f7f9;
+            border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            position: relative;
         }
-        h1 { color: #333; border-bottom: 3px solid #007bff; padding-bottom: 10px; margin-bottom: 20px; text-align: center; }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
 
-        /* 버튼 및 헤더 */
-        .header-buttons { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        button { padding: 10px 20px; cursor: pointer; border: none; border-radius: 5px; font-weight: bold; transition: background-color 0.3s; font-size: 14px; }
-        button:disabled { background-color: #cccccc !important; cursor: not-allowed; color: #666666 !important; }
+        /* 버튼 배치 (Flexbox) */
+        .header-buttons {
+            display: flex;
+            justify-content: space-between; 
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            padding: 10px 20px; 
+            cursor: pointer; 
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            font-size: 14px;
+        }
+        button:disabled {
+            background-color: #cccccc !important;
+            cursor: not-allowed;
+            color: #666666 !important;
+        }
 
         #start-voice-btn { background-color: #007bff; color: white; }
-        #login-btn { background-color: #6c757d; color: white; }
-        #login-btn.logout-mode { background-color: #dc3545; }
-        #submit-text-btn { background-color: #28a745; color: white; width: 100%; margin-top: 5px; }
+        #start-voice-btn:hover { background-color: #0056b3; }
 
-        /* 입력 영역 */
+        #login-btn { background-color: #6c757d; color: white; }
+        #login-btn:hover { background-color: #5a6268; }
+        #login-btn.logout-mode { background-color: #dc3545; } 
+        
+        #submit-text-btn { background-color: #28a745; color: white; width: 100%; margin-top: 5px;}
+        #submit-text-btn:hover { background-color: #1e7e34; }
+
         .input-area { margin-bottom: 20px; }
-        input[type="text"] { padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; box-sizing: border-box; width: 100%; margin-bottom: 5px; }
+        input[type="text"] {
+            padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; 
+            box-sizing: border-box; width: 100%; margin-bottom: 5px;
+        }
         label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
         
-        #voice-result { font-weight: bold; color: #d9534f; display: block; margin-bottom: 10px; min-height: 20px; }
-        #status-message { color: #007bff; margin-top: 10px; font-size: 0.95em; padding: 10px; border: 1px solid #cce5ff; background-color: #e2f0ff; border-radius: 5px; text-align: center; }
+        #voice-result { 
+            font-weight: bold; color: #d9534f; display: block; margin-bottom: 10px; min-height: 20px; 
+        }
+        #status-message { 
+            color: #007bff; margin-top: 10px; font-size: 0.95em; padding: 10px; 
+            border: 1px solid #cce5ff; background-color: #e2f0ff; border-radius: 5px; text-align: center;
+        }
 
-        /* 일정 리스트 */
-        .task-section { background: white; margin-top: 20px; padding: 15px; border-radius: 8px; border: 1px solid #ddd; }
-        .task-section h3 { margin-top: 0; font-size: 1.1em; color: #444; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        /* 리스트 스타일 */
+        .task-section {
+            background: white;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        .task-section h3 {
+            margin-top: 0;
+            font-size: 1.1em;
+            color: #444;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
         ul { padding-left: 20px; margin-bottom: 0; }
         li { margin-bottom: 8px; color: #555; line-height: 1.4; }
-        .time-badge { font-size: 0.8em; background-color: #e2f0ff; color: #007bff; padding: 2px 6px; border-radius: 4px; margin-right: 6px; font-weight: bold; }
+        
+        .time-badge {
+            font-size: 0.8em; background-color: #e2f0ff; color: #007bff;
+            padding: 2px 6px; border-radius: 4px; margin-right: 6px; font-weight: bold;
+        }
 
-        /* 추천 영역 */
-        #recommendation-area { display: none; margin-top: 15px; padding: 15px; background-color: #fff3cd; border: 1px solid #ffeeba; border-radius: 8px; }
-        .slot-btn { background-color: #ffc107; color: #333; margin: 5px; padding: 10px 15px; border-radius: 20px; font-size: 0.95em; border: 1px solid #e0a800; display: inline-block; }
-        .slot-btn:hover { background-color: #e0a800; transform: translateY(-1px); }
+        /* 추천 슬롯 버튼 스타일 */
+        #recommendation-area { display: none; margin-top: 15px; padding: 10px; background-color: #fff3cd; border: 1px solid #ffeeba; border-radius: 8px; }
+        .slot-btn { background-color: #ffc107; color: #333; margin: 5px; padding: 8px 12px; border-radius: 20px; font-size: 0.9em; border: 1px solid #e0a800; }
+        .slot-btn:hover { background-color: #e0a800; }
 
-        /* 팝업 모달 (상세 내용 입력용) */
+        /* 모달 스타일 */
         #event-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
         .modal-content { background: white; padding: 20px; border-radius: 10px; width: 80%; max-width: 400px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); text-align: center; }
-        .modal-content h3 { margin-top: 0; color: #333; }
         .modal-actions { margin-top: 15px; display: flex; justify-content: space-between; }
         .modal-actions button { width: 48%; }
-        #modal-cancel { background-color: #6c757d; color: white; }
 
-        .calendar-container { margin-top: 30px; position: relative; padding-bottom: 75%; height: 0; overflow: hidden; border: 1px solid #ccc; border-radius: 8px; }
-        .calendar-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-        #user-info { text-align: right; font-size: 0.8em; color: #888; margin-bottom: 5px; }
+        .calendar-container {
+            margin-top: 30px; position: relative; padding-bottom: 75%; height: 0; overflow: hidden;
+            border: 1px solid #ccc; border-radius: 8px;
+        }
+        .calendar-container iframe {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        }
+        
+        #user-info {
+            text-align: right; font-size: 0.8em; color: #888; margin-bottom: 5px;
+        }
     </style>
 </head>
 <body>
-    <h1>📅서진테크 AI 일정관리</h1>
+    <h1>📅 서진테크 AI 일정관리</h1>
+    
     <div id="user-info"></div>
 
     <div class="header-buttons">
@@ -69,7 +130,7 @@
     <div class="input-area">
         <p>인식된 내용: <span id="voice-result"></span></p>
         <label for="text-input">텍스트 입력:</label>
-        <input type="text" id="text-input" placeholder="예: 내일 빈 시간 언제야?">
+        <input type="text" id="text-input" placeholder="예: 내일 빈 시간 추천해줘">
         <button id="submit-text-btn" disabled>전송</button>
     </div>
 
@@ -81,12 +142,12 @@
     <p id="status-message">⏳ 시스템 연결 대기 중...</p>
     
     <div class="task-section">
-        <h3>☀️ 오늘 나의 일정</h3>
+        <h3>☀️ 오늘 나의 일정 (Today)</h3>
         <ul id="today-list"><li>로그인이 필요합니다.</li></ul>
     </div>
 
     <div class="task-section">
-        <h3>🗓️ 이번 주 나의 일정</h3>
+        <h3>🗓️ 이번 주 나의 일정 (This Week)</h3>
         <ul id="week-list"><li>로그인이 필요합니다.</li></ul>
     </div>
 
@@ -98,10 +159,10 @@
         <div class="modal-content">
             <h3>📝 일정 상세 내용</h3>
             <p id="modal-time-display" style="font-weight:bold; color:#007bff;"></p>
-            <input type="text" id="modal-event-title" placeholder="예: 거래처 미팅, 팀 회식">
+            <input type="text" id="modal-event-title" placeholder="예: 거래처 미팅, 팀 회식" style="width:90%; padding:10px;">
             <div class="modal-actions">
-                <button id="modal-cancel">취소</button>
-                <button id="modal-confirm" style="background-color: #28a745; color: white;">확인</button>
+                <button id="modal-cancel" style="background-color:#6c757d; color:white;">취소</button>
+                <button id="modal-confirm" style="background-color:#28a745; color:white;">확인</button>
             </div>
         </div>
     </div>
@@ -110,15 +171,18 @@
     <script src="https://accounts.google.com/gsi/client"></script>
 
     <script>
-        // 🚨 설정: ID 확인
+        // 🚨 ID 확인
         const CLIENT_ID = '1049915608396-i3jn8jrm24bc9mkagdtokk3rfa3li513.apps.googleusercontent.com'; 
         const CALENDAR_ID = 'cce03f167bf28bafd3795833209784265eadca0ed8138cae7d9024470ad36c66@group.calendar.google.com';
 
         const SCOPES = 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.email'; 
         const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest"];
 
-        let tokenClient, gapiInited = false, gisInited = false, userEmail = '';
-        let selectedSlotDate = null; // 선택된 시간 저장용
+        let tokenClient;
+        let gapiInited = false;
+        let gisInited = false;
+        let userEmail = '';
+        let selectedSlotDate = null;
 
         // DOM 요소
         const statusMessage = document.getElementById('status-message');
@@ -131,27 +195,50 @@
         const recArea = document.getElementById('recommendation-area');
         const slotsContainer = document.getElementById('slots-container');
         
-        // 모달 요소
         const modal = document.getElementById('event-modal');
         const modalTimeDisplay = document.getElementById('modal-time-display');
         const modalTitleInput = document.getElementById('modal-event-title');
         const modalCancel = document.getElementById('modal-cancel');
         const modalConfirm = document.getElementById('modal-confirm');
 
-        function gapiLoaded() { gapi.load('client', intializeGapiClient); }
-        function gisLoaded() { 
-            tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: CLIENT_ID, scope: SCOPES, callback: '', 
-            });
-            gisInited = true; maybeEnableButtons();
+        // --- 초기화 로직 ---
+
+        function gapiLoaded() { 
+            gapi.load('client', intializeGapiClient); 
         }
+
         async function intializeGapiClient() {
-            await gapi.client.init({ discoveryDocs: DISCOVERY_DOCS });
-            gapiInited = true; maybeEnableButtons();
+            try {
+                await gapi.client.init({ discoveryDocs: DISCOVERY_DOCS });
+                gapiInited = true;
+                maybeEnableButtons();
+            } catch (err) {
+                // 🚨 여기서 오류가 나면 버튼이 활성화되지 않음
+                console.error("GAPI 초기화 오류:", err);
+                statusMessage.innerHTML = `❌ 초기화 실패!<br>원인: ${err.error?.message || JSON.stringify(err)}<br><b>Google Calendar API가 켜져 있는지 확인하세요.</b>`;
+            }
         }
+
+        function gisLoaded() { 
+            try {
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: CLIENT_ID,
+                    scope: SCOPES,
+                    callback: '', 
+                });
+                gisInited = true;
+                maybeEnableButtons();
+            } catch (err) {
+                console.error("GIS 초기화 오류:", err);
+                statusMessage.textContent = "❌ 로그인 모듈 로드 실패";
+            }
+        }
+
         function maybeEnableButtons() {
             if (gapiInited && gisInited) {
+                // 세션 복구
                 const savedToken = localStorage.getItem('access_token');
+                
                 if (savedToken) {
                     gapi.client.setToken({access_token: savedToken});
                     fetchUserInfo(true);
@@ -160,51 +247,77 @@
                 }
             }
         }
+
         function fetchUserInfo(isAutoLogin) {
             statusMessage.textContent = "🔄 사용자 정보 확인 중...";
             fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                headers: { 'Authorization': `Bearer ${gapi.client.getToken().access_token}` }
-            }).then(res => {
-                if (!res.ok) throw new Error('Session expired');
-                return res.json();
-            }).then(data => {
+                headers: {
+                    'Authorization': `Bearer ${gapi.client.getToken().access_token}`
+                }
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Session expired');
+                return response.json();
+            })
+            .then(data => {
                 userEmail = data.email;
                 userInfoDiv.textContent = `${data.name}님 로그인 중`;
                 setLoginState(true);
                 loadEventsList();
                 if(!isAutoLogin) statusMessage.textContent = `✅ 환영합니다, ${data.name}님!`;
-            }).catch(() => handleLogout());
+            })
+            .catch(error => {
+                console.log("세션 만료", error);
+                handleLogout();
+            });
         }
+
         function setLoginState(isLoggedIn) {
             if (isLoggedIn) {
-                loginBtn.textContent = "🚪 로그아웃"; loginBtn.classList.add('logout-mode');
+                loginBtn.textContent = "🚪 로그아웃";
+                loginBtn.classList.add('logout-mode');
                 loginBtn.onclick = handleLogout;
-                [loginBtn, voiceBtn, submitBtn].forEach(b => b.disabled = false);
+                loginBtn.disabled = false;
+                voiceBtn.disabled = false;
+                submitBtn.disabled = false;
             } else {
-                loginBtn.textContent = "🔑 로그인"; loginBtn.classList.remove('logout-mode');
+                loginBtn.textContent = "🔑 로그인";
+                loginBtn.classList.remove('logout-mode');
                 loginBtn.onclick = handleLogin;
-                voiceBtn.disabled = true; submitBtn.disabled = true;
+                loginBtn.disabled = false;
+                voiceBtn.disabled = true;
+                submitBtn.disabled = true;
+                
                 userInfoDiv.textContent = "";
+                todayList.innerHTML = '<li>로그인이 필요합니다.</li>';
+                weekList.innerHTML = '<li>로그인이 필요합니다.</li>';
                 statusMessage.textContent = "✅ 준비 완료. 로그인해주세요.";
+                userEmail = '';
             }
         }
+
         function handleLogin() {
-            tokenClient.callback = (resp) => {
-                if (resp.error) throw (resp);
+            tokenClient.callback = async (resp) => {
+                if (resp.error !== undefined) throw (resp);
                 localStorage.setItem('access_token', resp.access_token);
                 fetchUserInfo(false);
             };
             tokenClient.requestAccessToken({prompt: 'consent'});
         }
+
         function handleLogout() {
             const token = gapi.client.getToken();
-            if (token) google.accounts.oauth2.revoke(token.access_token);
-            gapi.client.setToken('');
+            if (token !== null) {
+                google.accounts.oauth2.revoke(token.access_token);
+                gapi.client.setToken('');
+            }
             localStorage.removeItem('access_token');
             setLoginState(false);
+            statusMessage.textContent = "로그아웃 되었습니다.";
         }
 
-        // --- 🧠 AI 비서 로직 ---
+        // --- 로직 (추천/저장) ---
+
         function processInput(text) {
             if (!text.trim()) return;
 
@@ -215,7 +328,6 @@
             }
         }
 
-        // 📅 빈 시간 찾기 (과거 시간 필터링 + 충돌 체크)
         async function findFreeSlots(text) {
             statusMessage.textContent = "🔍 빈 시간을 분석하고 있습니다...";
             recArea.style.display = 'none';
@@ -226,11 +338,9 @@
             const workStartHour = 9;
             const workEndHour = 18;
 
-            // 오늘이라면 현재 시간 이후부터 추천
             const now = new Date();
             let startHour = workStartHour;
             
-            // 같은 날짜인 경우
             if (targetDate.toDateString() === now.toDateString()) {
                 startHour = Math.max(workStartHour, now.getHours() + 1);
             }
@@ -264,6 +374,7 @@
                     for (let event of busyEvents) {
                         const eventStart = new Date(event.start.dateTime || event.start.date);
                         const eventEnd = new Date(event.end.dateTime || event.end.date);
+                        
                         if (currentPointer < eventEnd && nextPointer > eventStart) {
                             isBusy = true; break;
                         }
@@ -296,7 +407,6 @@
                 btn.className = 'slot-btn';
                 btn.textContent = timeStr;
                 
-                // ⭐️ 클릭 시 모달 열기 (바로 저장 X)
                 btn.onclick = () => {
                     selectedSlotDate = slot;
                     openModal(slot);
@@ -305,11 +415,10 @@
             });
         }
 
-        // --- 모달 관련 함수 ---
         function openModal(date) {
             const timeStr = (date.getMonth()+1) + "/" + date.getDate() + " " + date.getHours() + ":00";
             modalTimeDisplay.textContent = timeStr;
-            modalTitleInput.value = ''; // 입력 초기화
+            modalTitleInput.value = '';
             modal.style.display = 'flex';
             modalTitleInput.focus();
         }
@@ -320,12 +429,9 @@
             const title = modalTitleInput.value.trim() || '새로운 일정';
             modal.style.display = 'none';
             recArea.style.display = 'none';
-            
-            // ⭐️ 최종 저장 전 충돌 체크 실행
             checkConflictAndSave(selectedSlotDate, title);
         };
 
-        // 🛡️ 충돌 체크 및 최종 저장
         async function checkConflictAndSave(startDate, title) {
             statusMessage.textContent = "🔍 중복 일정 확인 중...";
             
@@ -333,7 +439,6 @@
             endDate.setHours(startDate.getHours() + 1);
 
             try {
-                // 저장하려는 시간에 일정이 있는지 다시 확인
                 const response = await gapi.client.calendar.events.list({
                     'calendarId': CALENDAR_ID,
                     'timeMin': startDate.toISOString(),
@@ -347,7 +452,6 @@
                     return;
                 }
 
-                // 중복 없으면 저장
                 const event = {
                     'summary': title,
                     'start': { 'dateTime': startDate.toISOString() },
@@ -370,7 +474,6 @@
             }
         }
 
-        // --- 일반 텍스트 파싱 저장 ---
         function processSchedule(text) {
             let summary = text.replace('일정 잡아줘', '').replace('에 미팅', '').trim();
             let startDate = new Date();
@@ -392,12 +495,9 @@
             } else {
                 startDate.setHours(startDate.getHours() + 1, 0, 0, 0);
             }
-
-            // 파싱된 시간으로 바로 충돌체크 및 저장 호출
             checkConflictAndSave(startDate, summary);
         }
 
-        // 리스트 로딩
         async function loadEventsList() {
             if (!userEmail) return;
             try {
@@ -456,4 +556,3 @@
     </script>
 </body>
 </html>
-
